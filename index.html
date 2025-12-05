@@ -37,55 +37,6 @@
             margin-top: 5px;
         }
         
-        .api-setup {
-            background: #1a1a1a;
-            padding: 15px 20px;
-            border-bottom: 1px solid #333;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-        
-        .api-setup input {
-            flex: 1;
-            padding: 10px;
-            background: #2a2a2a;
-            border: 1px solid #333;
-            color: #e0e0e0;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-        
-        .api-setup button {
-            padding: 10px 20px;
-            background: #0066cc;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        
-        .api-setup button:hover {
-            background: #0052a3;
-        }
-        
-        .api-setup .status {
-            padding: 10px 15px;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-        
-        .api-setup .status.active {
-            background: #004d00;
-            color: #00ff00;
-        }
-        
-        .api-setup .status.inactive {
-            background: #4d0000;
-            color: #ff6666;
-        }
-        
         #chat-container {
             flex: 1;
             overflow-y: auto;
@@ -158,20 +109,6 @@
             cursor: not-allowed;
         }
         
-        .loading {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #0066cc;
-            animation: pulse 1s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 0.3; }
-            50% { opacity: 1; }
-        }
-        
         ::-webkit-scrollbar {
             width: 10px;
         }
@@ -196,27 +133,20 @@
         <p>ENTJ型・実力主義・論理優先の思考パターンを模倣</p>
     </div>
     
-    <div class="api-setup">
-        <input type="password" id="api-key-input" placeholder="Google Gemini APIキーを入力 (https://aistudio.google.com/app/apikey で取得)">
-        <button onclick="setApiKey()">設定</button>
-        <div class="status inactive" id="api-status">未設定</div>
-    </div>
-    
     <div id="chat-container">
         <div class="message system">
-            システム初期化完了。すばる様の思考パターンをエミュレート可能です。<br>
-            まずGoogle Gemini APIキーを設定してください(無料: https://aistudio.google.com/app/apikey)
+            システム起動完了。すばる様の思考パターンをエミュレート中。
         </div>
     </div>
     
     <div class="input-container">
         <textarea id="user-input" placeholder="質問を入力..." rows="1"></textarea>
-        <button id="send-btn" onclick="sendMessage()" disabled>送信</button>
+        <button id="send-btn" onclick="sendMessage()">送信</button>
     </div>
 
     <script>
         const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent';
-        let API_KEY = localStorage.getItem('gemini_api_key') || '';
+        const API_KEY = 'AIzaSyB72yyPET27LxoYY1fLQp-mT4Ure2bYhKs';
         let conversationHistory = [];
         
         const SYSTEM_PROMPT = `あなたは「すばる」という18歳の人物の思考パターンを忠実に模倣するAIです。以下の特徴を完全に体現してください。
@@ -276,69 +206,26 @@
 
 この人格で、すばる本人のように応答してください。`;
 
-        // 初期化
-        if (API_KEY) {
-            updateApiStatus(true);
-            document.getElementById('send-btn').disabled = false;
-            document.getElementById('api-key-input').value = '設定済み';
-        }
-
-        function setApiKey() {
-            const input = document.getElementById('api-key-input');
-            const key = input.value.trim();
-            
-            if (!key || key === '設定済み') {
-                addSystemMessage('有効なAPIキーを入力してください');
-                return;
-            }
-            
-            API_KEY = key;
-            localStorage.setItem('gemini_api_key', key);
-            updateApiStatus(true);
-            document.getElementById('send-btn').disabled = false;
-            input.value = '設定済み';
-            addSystemMessage('APIキー設定完了。会話を開始できます。');
-        }
-
-        function updateApiStatus(active) {
-            const status = document.getElementById('api-status');
-            if (active) {
-                status.className = 'status active';
-                status.textContent = '接続済み';
-            } else {
-                status.className = 'status inactive';
-                status.textContent = '未設定';
-            }
-        }
-
         async function sendMessage() {
             const input = document.getElementById('user-input');
             const message = input.value.trim();
             
             if (!message) return;
-            if (!API_KEY) {
-                addSystemMessage('APIキーを設定してください');
-                return;
-            }
 
-            // ユーザーメッセージ表示
             addMessage('user', message);
             input.value = '';
             input.style.height = 'auto';
             
-            // 送信ボタン無効化
             const sendBtn = document.getElementById('send-btn');
             sendBtn.disabled = true;
             sendBtn.textContent = '送信中...';
 
-            // 会話履歴に追加
             conversationHistory.push({
                 role: 'user',
                 parts: [{ text: message }]
             });
 
             try {
-                // Gemini APIリクエスト
                 const response = await fetch(`${API_URL}?key=${API_KEY}`, {
                     method: 'POST',
                     headers: {
@@ -363,7 +250,6 @@
                 const data = await response.json();
                 const aiMessage = data.candidates[0].content.parts[0].text;
 
-                // 会話履歴に追加
                 conversationHistory.push({
                     role: 'model',
                     parts: [{ text: aiMessage }]
@@ -373,7 +259,7 @@
 
             } catch (error) {
                 console.error('Error:', error);
-                addSystemMessage(`エラー: ${error.message}. APIキーを確認してください。`);
+                addSystemMessage(`エラー: ${error.message}`);
             } finally {
                 sendBtn.disabled = false;
                 sendBtn.textContent = '送信';
@@ -398,7 +284,6 @@
             container.scrollTop = container.scrollHeight;
         }
 
-        // Enterキーで送信(Shift+Enterで改行)
         document.getElementById('user-input').addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -406,7 +291,6 @@
             }
         });
 
-        // テキストエリアの自動サイズ調整
         document.getElementById('user-input').addEventListener('input', function() {
             this.style.height = 'auto';
             this.style.height = Math.min(this.scrollHeight, 150) + 'px';
